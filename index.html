@@ -7,6 +7,13 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
 	
 <style>
+@font-face{
+    font-family: "sss";               /*自定义字体名称*/
+    src:url("imgs/consolas-webfont.woff") format("woff");     /*Safari,Android,iOS*/
+    font-weight: normal;
+    font-style: normal;
+}
+
 #time{
 
   text-shadow: 0 1px 0 #ccc,
@@ -220,7 +227,7 @@ $(function(){
 			display("GO")();
 			ingame=true;
 			var mv=-(Math.pow(Math.abs(10),0.8))*10;
-			swimmer.animate({"top": 130+mv+"px"},500,"linear",function(){
+			swimmer.animate({"top": 170+mv+"px"},500,"linear",function(){
 				forwardP=15;
 				startTime=new Date();
 				window.requestAnimationFrame(gameLoop);
@@ -394,7 +401,7 @@ $(function(){
 		swimmer.css('transform','rotate('+ang+'rad)');
 		
 		dist+=forwardP*2.2*Math.cos(ang);
-		horz+=forwardP*2.2*Math.sin(ang);
+		horz+=forwardP*2.2*Math.sin(ang)+Math.random()-0.5;
 		swimmer.css("left",w/2-120+horz+"px");
 	    if (dist>773*8){ //Done
 			dist=773*8;
@@ -414,24 +421,26 @@ $(function(){
 		if (dist<0)
 			dist=0;
 		if (Math.abs(horz)>130){ //GG
-			stopGame("你过于靠近隔壁泳道，结果被旁边一老大爷一脚踢到头部");
+			stopGame("你过于靠近隔壁泳道，结果被旁边的大爷一脚踢到屁屁--OUCH!");
 			return;
 		}
 		movePool(dist);
 		//$('.floater').css("background-position-y",dist*1.3+'px');
 		var mv=-Math.sign(forwardP)*(Math.pow(Math.abs(forwardP),0.8))*10;
-		swimmer.css('top',130+mv+'px');
+		swimmer.css('top',170+mv+'px');
 		window.requestAnimationFrame(gameLoop);
-		
+		debug.html(d);
+		d="";
 	}
 	
 	function step(e){
+		d+="1";
 		e.stopPropagation(); 
+		d+="2";
 		e.preventDefault();
+		d+="3";
 		if (!ingame) return;
-		
 		for (var i = 0; i < event.touches.length; i++) {
-			//d+='x: ' + event.touches[i].pageX + ', y: ' + event.touches[i].pageY+'<br/>';
 			var x=event.touches[i].pageX, y=event.touches[i].pageY;
 			if (x<w/2){
 				var xd=(130-x)/100, yd=((y-h)+130)/100;
@@ -450,10 +459,10 @@ $(function(){
 				//d+='R:'+xd+':'+yd+'<br/>';
 			};
 		}
+		d+="4";
 		
-		//debug.html(d);
 	}
-	$(document)
+	$("#gameProcessLayer")
 		.on('touchstart',step)
 		.on('touchmove',step)
 		.on('touchend',step);
@@ -522,6 +531,7 @@ $(function(){
 </script>
 </head>
 <body style="overflow:hidden">
+<div id="debug" style="position:absolute; z-index:1000"></div>
 <div id="swimmingPool" class="fillParent tile">
 </div>
 <div id="swimmingStart" class="fillParent tileStart">
@@ -591,8 +601,8 @@ $(function(){
 </div>
 <div id="gameProcessLayer" class="fillParent" style="display:none">
 	<div id="countDown" style="position:absolute; text-align:center; width:100%; top:150px; display:none;">3</div>
-	<div id="timeboard" style="position:absolute; left:0; right:0; height:107px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 85%, rgba(0,0,0,0) 100%"></div>
-	<div id="time" style="position:absolute; left:0; right:0; margin:0 auto; top: 10px; font-size:77px; width:250px; font-family:'Lucida Console', Monaco, monospace; color:white">00.00</div>
+	<div id="timeboard" style="position:absolute; left:0; right:0; height:90px; background: linear-gradient(180deg, rgba(255, 73, 0, 1) 0%, rgba(255, 227, 170, 0.5) 5%, rgba(255, 227, 170, 0.5) 95%, rgba(255, 73, 0, 0.4) 97%, rgba(0,0,0,0) 100%"></div>
+	<div id="time" style="position:absolute; left:0; right:0; margin:0 auto; top: 0px; font-size:77px; width:210px; font-family: 'sss'; color:white;">00.00</div>
 	<div id="padLeft" class="pad" style="left:0;" ></div>
 	<div id="padRight" class="pad" style="right:0;"></div>
 </div>
