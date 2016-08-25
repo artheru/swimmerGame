@@ -1,0 +1,620 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+<title>SWIMMER</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
+	
+<style>
+#time{
+
+  text-shadow: 0 1px 0 #ccc,
+               0 2px 0 #c9c9c9,
+               0 3px 0 #bbb,
+               0 4px 0 #b9b9b9,
+               0 5px 0 #aaa,
+               0 6px 1px rgba(0,0,0,.1),
+               0 0 5px rgba(0,0,0,.1),
+               0 1px 3px rgba(0,0,0,.3),
+               0 3px 5px rgba(0,0,0,.2),
+               0 5px 10px rgba(0,0,0,.25),
+               0 10px 10px rgba(0,0,0,.2),
+               0 20px 20px rgba(0,0,0,.15);
+			  }
+#countDown{
+	font-family:Arial;
+	color:#009191;
+	font-size:120px;
+  text-shadow: 0 3px 0 #ccc,
+	3px 3px 0 #2CCCCC ,
+	-3px 0 0 #75FEFE ,
+	-3px -3px 0 #4AEEEE ,
+	-3px 0 0 #1A9393 ,
+	0 -3px 0 #195454 
+			  }
+.tile{
+	background-color: transparent;
+	background-image:  url(imgs/tiles.png);
+}
+.tileEnd{
+	background-color: transparent;
+	background:  url(imgs/tiles2.png);
+	background-repeat: repeat-x;
+	background-position-y: -773px;
+}
+.tileStart{
+	background-color: transparent;
+	background:  url(imgs/tilesS.png);
+	background-repeat: repeat-x;
+}
+.wave{
+	background-image: url(imgs/wave1.png);
+}
+.wave2{
+	background-image: url(imgs/wave2.png);
+	background-repeat: no-repeat;
+	width:100px;
+	height:20px;
+	position:absolute;
+}
+@keyframes rippleH1{
+	0% {background-position-x:0px; opacity:0.5}
+	50% {background-position-x:10px; opacity:1}
+	100% {background-position-x:20px; opacity:0.5}
+}
+@keyframes rippleH2{
+	0% {background-position-x:0px; opacity:0.2}
+	50% {background-position-x:22px; opacity:0.5}
+	100% {background-position-x:45px; opacity:0}
+}
+@keyframes fadeInOut1{
+	0% {background-position-x:0px; opacity:0}
+	50% {background-position-x:10px; opacity:1}
+	100% {background-position-x:20px; opacity:0}
+}
+@keyframes fadeInOut2{
+	0% {background-position-x:20px; opacity:0}
+	50% {background-position-x:10px; opacity:1}
+	100% {background-position-x:0px; opacity:0}
+}
+.fadeInOut1{
+	animation: fadeInOut1 1s linear;
+}
+.fadeInOut2{
+	animation: fadeInOut2 1s linear;
+}
+.fillParent{
+	position:absolute;
+	left:0px;
+	right:0px;
+	top:0px;
+	bottom:0px;
+	margin:auto;
+}
+.arm{
+	background:#FFD3A8;
+	height:50px;
+	border-radius:10px;
+	width:12px;
+	position:absolute;
+}
+.leg{
+	background:#FFD3A8;
+	height:77px;
+	border-radius:9px;
+	width:18px;
+	position:absolute;
+}
+.left{
+	border-left:2px solid #E4B688;
+}
+.right{
+	border-right:2px solid #E4B688;
+}
+.origin1{
+  transform-origin:6px 6px;
+}
+.origin2{
+  transform-origin:6px 44px;
+}
+.origin3{
+  transform-origin:9px 6px;
+}
+.origin4{
+  transform-origin:9px 68px;
+}
+.pad{
+	height:200px;
+	width:100px;
+	bottom:0;
+	position:absolute;
+	margin:20px;
+	border: 10px solid rgba(255,255,255,0.3);
+	background: rgba(255,255,255,0.2);
+}
+.floater{
+	height:100%;
+	width:28px;
+	position:absolute;
+	/*background-image:url(imgs/floater.png);*/
+	background: #3A3276;
+}
+#end{
+ background: url(imgs/tiles2.png) no-repeat -9999px -9999px;
+}
+</style>
+<script src="zepto.min.js"></script>
+<script src="sprintf.js"></script>
+<script src="fx.js"></script>
+<script>
+function applyAnim(what, anim, next) {
+	what.addClass(anim).one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', next);
+};
+
+$(function(){	
+	var swimmingPool=$('#swimmingPool'),
+		swimmingPoolStart=$('#swimmingStart'),
+		swimmingPoolEnd=$('#swimmingEnd'),
+		swimmer=$('#swimmer'),
+		timer=$('#time');
+	swimmingPool.css('background-position-x',$(window).width()/2+'px');
+	swimmingPoolStart.css('background-position-x',$(window).width()/2+'px');
+	swimmingPoolEnd.css('background-position-x',$(window).width()/2+'px');
+	var w=swimmingPool.width(), h=swimmingPool.height();
+	var 
+		background=$('#swimmingPool, #wave1, #wave2, .floater'),
+		leftArm=$('#leftArm'),
+		leftUpperArm=$('#leftUpperArm'),
+		leftLowerArm=$('#leftLowerArm'),
+		rightArm=$('#rightArm'),
+		rightUpperArm=$('#rightUpperArm'),
+		rightLowerArm=$('#rightLowerArm'),
+		leftLeg=$('#leftLeg'),
+		leftUpperLeg=$('#leftUpperLeg'),
+		leftLowerLeg=$('#leftLowerLeg'),
+		rightLeg=$('#rightLeg'),
+		rightUpperLeg=$('#rightUpperLeg'),
+		rightLowerLeg=$('#rightLowerLeg');
+	
+	var lastTimeLeft=new Date(), lastTimeRight=new Date();
+	var forwardP=0;
+	var rotateP=0;
+	var dist=0, horz=0;
+	var ang=0;
+	var factorK=1.3;
+	var startTime=0;
+	var game;
+	var ingame=false;
+	
+	function movePool(dist){
+		swimmingPoolStart.css('background-position-y',h-773+dist+'px');
+		swimmingPool.css('background-position-y',dist+'px');
+		swimmingPoolEnd.css('background-position-y',-773*8+dist+'px');
+	}
+	
+	function startGame(){
+		swimmer.css("left",w/2-120+"px");
+		clearInterval(game);
+		var countDown=$("#countDown");
+		swimmer.css("top",h-100+'px');
+		function display(what,next){
+			return function(){
+				countDown.show();
+				countDown.html(what);
+				countDown.css("opacity",1);
+				countDown.animate({"opacity":0}, 1000, "linear", next);
+			}
+		}
+		//should use promise.
+		dist=0;
+		horz=0;
+		ang=0;
+		movePool(0);
+		var xd=0.05, yd=1;
+		posLeftArm(xd,yd);
+		posLeftLeg(xd,yd);
+		posRightArm(xd,yd);
+		posRightLeg(xd,yd);
+		display("3",display("2",display("1",function(){
+			display("GO")();
+			ingame=true;
+			var mv=-(Math.pow(Math.abs(10),0.8))*10;
+			swimmer.animate({"top": 130+mv+"px"},500,"linear",function(){
+				forwardP=15;
+				startTime=new Date();
+				window.requestAnimationFrame(gameLoop);
+			});
+		})))();
+	}
+	function stopGame(words){
+		ingame=false;
+		$("#gameOverDialog").show();
+		$("#Message").html(words);
+	}
+	$("#Restart").on('touchstart',function(){
+		$("#gameOverDialog").hide();
+		ingame=true;
+		swimmer.css('transform','rotate(0rad)');
+		startGame();
+	});
+	$("#Return").on('touchstart',function(){
+		$("#gameOverDialog").hide();
+		$("#startingDialog").show();
+		ingame=true;
+		swimmer.css('transform','rotate(0rad)');
+		startIntro();
+		$("#gameProcessLayer").hide();
+	});
+	
+	function posLeftArm(x,y){ 
+		var angle=Math.atan(x/y);
+		if (angle<0) angle+=Math.PI;
+		angle*=1.1;
+		leftArm.css('transform','rotate('+(angle)+'rad)');
+		l=Math.sqrt(y*y+x*x);
+		angle2=Math.acos(l);
+		if (isNaN(angle2)){
+			angle2=0; l=1;
+		}
+		var fP=(posLeftArm.l*Math.cos(posLeftArm.angle-Math.PI/2)+l*Math.cos(angle-Math.PI/2))*Math.sin(posLeftArm.angle-angle)
+		var zF=Math.abs(posLeftArm.angle-angle);
+		var zF=Math.pow(zF,factorK)+zF
+		if (!isNaN(fP))
+			forwardP+=fP*zF;
+			
+		var arP=(Math.sin(angle+0.418-Math.PI/2)*49.25+l*39)*l,
+			brP=(Math.sin(posLeftArm.angle+0.418-Math.PI/2)*49.25+posLeftArm.l*39)*posLeftArm.l;
+		var rP=(Math.max(arP,brP)*0.333+0.666*Math.min(brP,arP))*(posLeftArm.angle-angle);
+		if (!isNaN(rP))
+			rotateP+=rP;
+		posLeftArm.l=l;
+		posLeftArm.angle=angle;
+		if (angle-angle2<0){
+			leftUpperArm.css('transform','rotate(-'+(angle)+'rad)');
+			var h=39/(Math.cos(angle2-angle)+Math.sin(angle2-angle)*Math.cos(Math.PI-angle2*2)/Math.sin(Math.PI-angle2*2))+11
+			leftUpperArm.css('height',h+'px');
+		}else{
+			leftUpperArm.css('transform','rotate(-'+angle2+'rad)');
+			leftUpperArm.css('height','50px');
+		}
+		leftLowerArm.css('transform','translate(0px,-'+(78*(1-l))+'px) rotate('+angle2+'rad)');
+	}
+	function posRightArm(x,y){
+		var angle=Math.atan(x/y);
+		if (angle<0) angle+=Math.PI;
+		angle*=1.1;
+		rightArm.css('transform','rotate(-'+(angle)+'rad)');
+		l=Math.sqrt(y*y+x*x);
+		angle2=Math.acos(l);
+		if (isNaN(angle2)){
+			angle2=0; l=1;
+		}
+		var fP=(posRightArm.l*Math.cos(posRightArm.angle-Math.PI/2)+l*Math.cos(angle-Math.PI/2))*Math.sin(posRightArm.angle-angle)
+		var zF=Math.abs(posRightArm.angle-angle);
+		var zF=Math.pow(zF,factorK)+zF
+		if (!isNaN(fP))
+			forwardP+=fP*zF;
+			
+		var arP=(Math.sin(angle+0.418-Math.PI/2)*49.25+l*39)*l,
+			brP=(Math.sin(posRightArm.angle+0.418-Math.PI/2)*49.25+posRightArm.l*39)*posRightArm.l;
+		var rP=(Math.max(arP,brP)*0.333+0.666*Math.min(brP,arP))*(posRightArm.angle-angle);
+		if (!isNaN(rP))
+			rotateP-=rP;
+		posRightArm.l=l;
+		posRightArm.angle=angle;
+		if (angle-angle2<0){
+			rightUpperArm.css('transform','rotate('+(angle)+'rad)');
+			var h=39/(Math.cos(angle2-angle)+Math.sin(angle2-angle)*Math.cos(Math.PI-angle2*2)/Math.sin(Math.PI-angle2*2))+11
+			rightUpperArm.css('height',h+'px');
+		}else{
+			rightUpperArm.css('transform','rotate('+angle2+'rad)');
+			rightUpperArm.css('height','50px');
+		}
+		rightLowerArm.css('transform','translate(0px,-'+(78*(1-l))+'px) rotate(-'+angle2+'rad)');
+	}
+	function posRightLeg(x,y){
+		y=y*0.20+0.80;
+		x=x*0.5;
+		var angle=Math.atan(x/y);
+		if (angle<0) angle+=Math.PI;
+		rightLeg.css('transform','rotate(-'+(angle)+'rad)');
+		l=Math.sqrt(y*y+x*x);
+		angle2=Math.acos(l);
+		if (isNaN(angle2)){
+			angle2=0; l=1;
+		}
+		var fP=(posRightLeg.l*Math.cos(posRightLeg.angle-Math.PI/2)+l*Math.cos(angle-Math.PI/2))*Math.sin(posRightLeg.angle-angle)
+		var zF=Math.abs(posRightLeg.angle-angle);
+		var zF=Math.pow(zF,factorK)+zF
+		if (!isNaN(fP))
+			forwardP+=fP*zF;
+		
+		var arP=(Math.sin(-angle+0.418)*49.25+l*57)*l,
+			brP=(Math.sin(-posRightLeg.angle+0.418)*49.25+posRightLeg.l*57)*posRightLeg.l;
+		var rP=(Math.max(arP,brP)*0.333+0.666*Math.min(brP,arP))*(posRightLeg.angle-angle);
+		if (!isNaN(rP))
+			rotateP-=rP;
+		posRightLeg.l=l;
+		posRightLeg.angle=angle;
+		rightUpperLeg.css('transform','rotate(-'+angle2+'rad)');
+		rightLowerLeg.css('transform','translate(0px,-'+(118*(1-l))+'px) rotate('+angle2+'rad)');
+	}
+	function posLeftLeg(x,y){
+		y=y*0.20+0.80;
+		x=x*0.5;
+		var angle=Math.atan(x/y);
+		if (angle<0) angle+=Math.PI;
+		leftLeg.css('transform','rotate('+(angle)+'rad)');
+		l=Math.sqrt(y*y+x*x);
+		angle2=Math.acos(l);
+		if (isNaN(angle2)){
+			angle2=0; l=1;
+		}
+		var fP=(posLeftLeg.l*Math.cos(posLeftLeg.angle-Math.PI/2)+l*Math.cos(angle-Math.PI/2))*Math.sin(posLeftLeg.angle-angle)
+		var zF=Math.abs(posLeftLeg.angle-angle);
+		var zF=Math.pow(zF,factorK)+zF
+		if (!isNaN(fP))
+			forwardP+=fP*zF;
+		
+		var arP=(Math.sin(-angle+0.418)*49.25+l*57)*l,
+			brP=(Math.sin(-posLeftLeg.angle+0.418)*49.25+posLeftLeg.l*57)*posLeftLeg.l;
+		var rP=(Math.max(arP,brP)*0.333+0.666*Math.min(brP,arP))*(posLeftLeg.angle-angle);
+		if (!isNaN(rP))
+			rotateP+=rP;
+		posLeftLeg.l=l;
+		posLeftLeg.angle=angle;
+		
+		leftUpperLeg.css('transform','rotate('+angle2+'rad)');
+		leftLowerLeg.css('transform','translate(0px,-'+(118*(1-l))+'px) rotate(-'+angle2+'rad)');
+	}
+	
+	var debug=$('#debug');
+	var d="";
+	
+	function gameLoop(){
+		var tD=(new Date()-startTime)/1000;
+		if (tD>100){
+			stopGame("小黄鸭都飘得比你快！");
+			return;
+		}
+		timer.text(sprintf("%05.2f",tD));
+		fP=Math.abs(forwardP);
+		var resistance=posLeftArm.l*Math.pow(Math.sin(posLeftArm.angle),2)+
+					   posRightArm.l*Math.pow(Math.sin(posRightArm.angle),2)+1.2;
+		if (isNaN(resistance))
+			resistance=1;
+		forwardP-=0.8*resistance*(Math.sign(forwardP)*(Math.pow(fP,1.7)*0.2+0.5*fP)*0.07);
+		if (isNaN(forwardP))
+			forwardP=0;
+	
+		rotateP*=0.8;
+		ang+=rotateP/6200;
+		
+		swimmer.css('transform','rotate('+ang+'rad)');
+		
+		dist+=forwardP*2.2*Math.cos(ang);
+		horz+=forwardP*2.2*Math.sin(ang);
+		swimmer.css("left",w/2-120+horz+"px");
+	    if (dist>773*8){ //Done
+			dist=773*8;
+			if (tD>70) stopGame("欸，幼儿园小朋友都比你飘得快！");
+			else if (tD>50) stopGame("欸，小学生都比你狗刨得快！");
+			else if (tD>35) stopGame("恭喜你达到了狗刨的速度！");
+			else if (tD>30) stopGame("如果你不左右乱飘的话可能还能再快一点！");
+			else if (tD>25) stopGame("恭喜！这个成绩终于可以参加残疾人运动会啦！");
+			else if (tD>22) stopGame("是挺快的，然而孙杨已经绕场10圈");
+			else if (tD>20) stopGame("确实挺快啊！如果你去了巴西参加奥运会的话，一定游不过那些食人鱼。对游不过。");
+			else if (tD>17) stopGame("你居然游过了那些食人鱼？——咦？你的屏幕被你擦得好干净！");
+			else if (tD>15) stopGame("喂你的手指不觉得烫么");
+			else if (tD>13) stopGame("屏幕被你搓爆了啊喂！");
+			else stopGame("警察叔叔，这里有个人把屏幕搓出火了，我们怀疑他吸了毒。");
+			return;
+		}
+		if (dist<0)
+			dist=0;
+		if (Math.abs(horz)>130){ //GG
+			stopGame("你过于靠近隔壁泳道，结果被旁边一老大爷一脚踢到头部");
+			return;
+		}
+		movePool(dist);
+		//$('.floater').css("background-position-y",dist*1.3+'px');
+		var mv=-Math.sign(forwardP)*(Math.pow(Math.abs(forwardP),0.8))*10;
+		swimmer.css('top',130+mv+'px');
+		window.requestAnimationFrame(gameLoop);
+		
+	}
+	
+	function step(e){
+		e.stopPropagation(); 
+		e.preventDefault();
+		if (!ingame) return;
+		
+		for (var i = 0; i < event.touches.length; i++) {
+			//d+='x: ' + event.touches[i].pageX + ', y: ' + event.touches[i].pageY+'<br/>';
+			var x=event.touches[i].pageX, y=event.touches[i].pageY;
+			if (x<w/2){
+				var xd=(130-x)/100, yd=((y-h)+130)/100;
+				if (xd<0.05) xd=0.05;
+				if (yd>1) yd=1; if (yd<-1) yd=-1;
+				posLeftArm(xd,yd);
+				posLeftLeg(xd,yd);
+				//d+='L:'+xd+':'+yd+'<br/>';
+			}else{
+				x=w-x;
+				var xd=(130-x)/100, yd=((y-h)+130)/100;
+				if (xd<0.05) xd=0.05;
+				if (yd>1) yd=1; if (yd<-1) yd=-1;
+				posRightArm(xd,yd);
+				posRightLeg(xd,yd);
+				//d+='R:'+xd+':'+yd+'<br/>';
+			};
+		}
+		
+		//debug.html(d);
+	}
+	$(document)
+		.on('touchstart',step)
+		.on('touchmove',step)
+		.on('touchend',step);
+	//startGame();
+	function startIntro(){
+		var state=0;
+		var dist=0;
+		ingame=false;
+		function introLoop(){
+			var vy=0.3;
+			var vx=0.2;
+			if (state==0){
+				yd-=vy/2;
+				if (yd<-1){
+					yd=-1; state=1;
+				}
+			}else if (state==1){
+				xd+=vx;
+				if (xd>1){
+					xd=1; state=2;
+				}
+			}else if (state==2){
+				yd+=vy;
+				if (yd>1){
+					yd=1; state=3;
+				}
+			}else if (state==3){
+				xd-=vx;
+				if (xd<0.05){
+					xd=0.05; state=0;
+				}
+			}
+			posLeftArm(xd,yd);
+			posLeftLeg(xd,yd);
+			posRightArm(xd,yd);
+			posRightLeg(xd,yd);
+			dist+=6;
+			swimmingPool.css('background-position-y',dist+'px');
+			if (!ingame)
+				window.requestAnimationFrame(introLoop);
+		}
+		var xd=0.05, yd=1;
+		posLeftArm(xd,yd);
+		posLeftLeg(xd,yd);
+		posRightArm(xd,yd);
+		posRightLeg(xd,yd);
+		swimmer.css("top",h+'px');
+		swimmer.css("left",w/2-120+'px');
+		swimmer.animate({top:80+"px"}, 1000, "swing",function(){
+			window.requestAnimationFrame(introLoop);
+		});
+		swimmingPoolStart.css('background-position-y',h+'px');
+		swimmingPoolEnd.css('background-position-y',-773+'px');
+	}
+	startIntro();
+	
+	function startBtn(){
+		$("#startingDialog").hide();
+		$("#gameProcessLayer").show();
+		ingame=true;
+		startGame();
+	}
+	$("#Start")
+		.on('touchstart',startBtn);
+});
+</script>
+</head>
+<body style="overflow:hidden">
+<div id="swimmingPool" class="fillParent tile">
+</div>
+<div id="swimmingStart" class="fillParent tileStart">
+</div>
+<div id="swimmingEnd" class="fillParent tileEnd">
+</div>
+<div id="swimmer" style="position:absolute;
+	width:240px;
+	height:300px;
+	bottom:0;">
+
+
+	<div id="leftLeg" class="origin3" style="position:absolute; left:100px; top:105px;" >
+	<div id="leftUpperLeg" class="leg left origin3"></div>
+	<div id="leftLowerLeg" class="leg left origin4" style="top:60px;"></div>
+	</div>
+	<div id="rightLeg" class="origin3" style="position:absolute; left:122px; top:105px;">
+	<div id="rightUpperLeg" class="leg right origin3"></div>
+	<div id="rightLowerLeg" class="leg right origin4" style="top:60px;"></div>
+	</div>
+	
+	
+	<div id="leftArm" class="origin1" style="position:absolute; left:93px; top:30px;">
+	<div id="leftLowerArm" class="arm left origin2" style="top:40px;"></div>
+	<div id="leftUpperArm" class="arm left origin1"></div>
+	</div>
+	
+	<div id="rightArm" class="origin1" style="position:absolute; left:136px; top:30px;">
+	<div id="rightLowerArm" class="arm right origin2" style="top:40px"></div>
+	<div id="rightUpperArm" class="arm right origin1"></div>
+	</div>
+	
+	<div id="torso" style="
+		position:absolute;
+		width:40px;
+		left:100px;
+		height:90px;
+		top:30px;
+		background: linear-gradient(180deg, rgba(255, 211, 168, 1) 75%, rgba(0,0,0,1) 76%);
+		border-radius:0 0 15px 15px;
+	"></div>
+	
+	<div id="head" style="
+		position:absolute;
+		left:100px;
+		top:-2px;
+		height:38px;
+		width:36px;
+		border-radius:100%;
+		background:#FFD3A8;
+		border:2px solid #E4B688;
+	">
+	</div>
+	<div id="hat" style="
+		position:absolute;
+		left:100px;
+		top:0px;
+		height:40px;
+		width:40px;
+		border-radius:100%;
+		background-color: #3C5194;
+		background-image: linear-gradient(45deg, transparent 70%, rgba(255,255,255,.5) 30%);
+		background-size: 8px 8px;
+		clip: rect(5px, 50px, 40px, 0px);
+	">
+	</div>
+</div>
+<div id="gameProcessLayer" class="fillParent" style="display:none">
+	<div id="countDown" style="position:absolute; text-align:center; width:100%; top:150px; display:none;">3</div>
+	<div id="timeboard" style="position:absolute; left:0; right:0; height:107px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 85%, rgba(0,0,0,0) 100%"></div>
+	<div id="time" style="position:absolute; left:0; right:0; margin:0 auto; top: 10px; font-size:77px; width:250px; font-family:'Lucida Console', Monaco, monospace; color:white">00.00</div>
+	<div id="padLeft" class="pad" style="left:0;" ></div>
+	<div id="padRight" class="pad" style="right:0;"></div>
+</div>
+<div id="startingDialog" class="fillParent">
+	<div id="box" style='position:absolute; padding:30px 15px; top:auto; bottom:40px; left:0; right:0; background-color:white; height:180px; border-top: 1px solid silver; border-bottom: 1px solid silver; color:#3d577a;
+    font-family: "微软雅黑","黑体",serif; opacity:0.85'>
+	<div id="About" style="font-size:30px;">拇指游泳</div>
+	<div style="padding-top:10px">玩法太简单了，你一看就懂！Artheru都<span style="color:red">懒得</span>写介绍了。
+	<span style="font-size:10px; padding-left:10px; color:silver">好吧，拼命地滑动你的大拇指，让小人快快游到终点，不要让他偏离泳道哦</span></div>
+	
+	<div id="Start" style="margin:20px 40px; text-align:center;padding:6px 10px; border:1px solid #142b49; background:#3d577a; color:white">开始</div>
+	</div>
+</div>
+<div id="gameOverDialog" style="display:none">
+	<div id="box" style='position:absolute; padding:30px 15px; top:auto; bottom:80px; left:0; right:0; background-color:white; height:220px; border-top: 1px solid silver; border-bottom: 1px solid silver; color:#3d577a;
+    font-family: "微软雅黑","黑体",serif; opacity:0.85'>
+	<div id="Message" style="font-size:30px; height:120px;">终了</div>
+	<div id="Restart" style="margin:10px 40px; font-size:18px; text-align:center;padding:6px 10px; border:1px solid #142b49; background:#3d577a; color:white">重新开始</div>
+	<div id="Return" style="margin:10px 40px;  font-size:18px; text-align:center;padding:6px 10px; border:1px solid #FF9675; background:#FF6636; color:white">返回</div>
+	</div>
+	</div>
+</div>
+
+</body>
+</html>
